@@ -1,0 +1,8 @@
+[
+{
+  "directory": "D:/9no Universidad/Chicharron y Concurrente/Proyecto Final/build",
+  "command": "C:\\msys64\\mingw64\\bin\\g++.exe  @CMakeFiles/app.dir/includes_CXX.rsp -g -std=gnu++17 -fopenmp -o CMakeFiles\\app.dir\\main.cpp.obj -c \"D:\\9no Universidad\\Chicharron y Concurrente\\Proyecto Final\\main.cpp\"",
+  "file": "D:/9no Universidad/Chicharron y Concurrente/Proyecto Final/main.cpp",
+  "output": "CMakeFiles/app.dir/main.cpp.obj"
+}
+]

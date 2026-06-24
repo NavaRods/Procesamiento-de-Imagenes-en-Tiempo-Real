@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesamiento de Imágenes en Tiempo Real</title>
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --panel-bg: #1a1d24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --border-color: #2d3748;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--accent-blue);
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 1.5rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .video-container {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        canvas {
+            width: 100%;
+            height: 480px;
+            background-color: #000;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .error-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            z-index: 10;
+        }
+
+        .error-overlay p {
+            color: var(--accent-red);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .controls-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .metrics-box {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .metrics-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent-green);
+            font-family: monospace;
+            transition: color 0.3s ease;
+        }
+
+        .metrics-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+        }
+
+        .btn-secuencial {
+            background-color: var(--accent-red);
+        }
+        
+        .btn-secuencial:hover { background-color: #dc2626; }
+
+        .btn-paralelo {
+            background-color: var(--accent-green);
+        }
+
+        .btn-paralelo:hover { background-color: #059669; }
+
+        .btn-reiniciar {
+            background-color: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-main);
+        }
+
+        .btn-reiniciar:hover { background-color: rgba(255, 255, 255, 0.1); }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .dot.slow { background-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+
+        @media (max-width: 860px) {
+            .dashboard { grid-template-columns: 1fr; }
+            canvas { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Sistema de Procesamiento en Tiempo Real</h1>
+        <p class="subtitle">Evaluación de Concurrencia y Paralelismo mediante Filtros de Imagen</p>
+    </header>
+
+    <div class="dashboard">
+        <!-- Contenedor del Video -->
+        <div class="video-container">
+            <img id="videoFeed" style="width: 100%; height: 480px; background-color: #000; border-radius: 8px; object-fit: cover;">
+            
+            <!-- Capa de Error -->
+            <div class="error-overlay" id="errorOverlay">
+                <p>Se perdió la conexión con el stream.</p>
+                <button class="btn-reiniciar" onclick="reiniciarStream()">Intentar de nuevo</button>
+            </div>
+        </div>
+
+        <!-- Panel de Control y Métricas -->
+        <div class="controls-panel">
+            <div class="metrics-box">
+                <div class="metrics-label">Rendimiento Actual</div>
+                <div class="metrics-value" id="fpsDisplay">0.0</div>
+                <div class="metrics-label" style="margin-top: 5px;">FPS</div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-secuencial" onclick="setModo('secuencial')">
+                    Modo Secuencial (1 Hilo)
+                </button>
+                <button class="btn-paralelo" onclick="setModo('paralelo')">
+                    Modo Paralelo (Multiprocesamiento)
+                </button>
+                <button class="btn-reiniciar" onclick="simularError()">
+                    Simular Caída de Servidor
+                </button>
+            </div>
+
+            <div class="status-indicator">
+                <div class="dot" id="statusDot"></div>
+                <span id="statusText">Esperando selección de modo...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const videoFeed = document.getElementById('videoFeed');
+        const fpsDisplay = document.getElementById('fpsDisplay');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const errorOverlay = document.getElementById('errorOverlay');
+
+        let socket;
+        let frameCount = 0;
+        let lastTime = performance.now();
+
+        function conectar() {
+            // La dirección del servidor C++ que compilaste
+            socket = new WebSocket('ws://localhost:8080/ws');
+            socket.binaryType = "arraybuffer";
+
+            socket.onopen = () => {
+                errorOverlay.style.display = 'none';
+                statusDot.className = 'dot';
+                statusDot.style.backgroundColor = 'var(--accent-green)';
+                statusText.textContent = 'Conectado al motor C++';
+                console.log("Conectado");
+            };
+
+            socket.onmessage = (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    // 1. Convertir binario a imagen
+                    const blob = new Blob([event.data], { type: 'image/jpeg' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // 2. Mostrar en pantalla
+                    const oldUrl = videoFeed.src;
+                    videoFeed.src = url;
+                    
+                    // 3. Liberar memoria (importante para no crashear el navegador)
+                    if (oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+
+                    // 4. Calcular FPS reales
+                    frameCount++;
+                    const now = performance.now();
+                    if (now - lastTime >= 1000) {
+                        fpsDisplay.textContent = frameCount.toFixed(1);
+                        frameCount = 0;
+                        lastTime = now;
+                    }
+                }
+            };
+
+            socket.onclose = () => {
+                simularError();
+            };
+
+            socket.onerror = (err) => {
+                console.error("Error en socket:", err);
+                simularError();
+            };
+        }
+
+        function setModo(modo) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                // Enviamos el comando al C++ para activar/desactivar OpenMP
+                socket.send("toggle");
+                
+                if (modo === 'secuencial') {
+                    statusText.textContent = 'Modo Secuencial (CPU Single-Core)';
+                    fpsDisplay.style.color = 'var(--accent-red)';
+                } else {
+                    statusText.textContent = 'Modo Paralelo (OpenMP Multicore)';
+                    fpsDisplay.style.color = 'var(--accent-green)';
+                }
+            }
+        }
+
+        function simularError() {
+            errorOverlay.style.display = 'flex';
+            statusDot.className = 'dot slow';
+            statusDot.style.backgroundColor = 'var(--accent-red)';
+            statusText.textContent = 'Servidor C++ desconectado';
+        }
+
+        function reiniciarStream() {
+            conectar();
+        }
+
+        // Iniciar conexión al cargar la página
+        conectar();
+    </script>
+</body>
+</html>
