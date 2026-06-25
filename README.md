@@ -40,7 +40,7 @@ Antes de compilar, asegúrate de tener instaladas las siguientes dependencias en
 
 ## 🔧 Compilación e Instalación
 
-1. **Clonar el repositorio:**
-   ```bash
-   git clone [https://github.com/TU_USUARIO/TU_REPOSITORIO.git](https://github.com/TU_USUARIO/TU_REPOSITORIO.git)
-   cd TU_REPOSITORIO
+# 1. Clonar el repositorio:
+```bash
+git clone https://github.com/NavaRods/Procesamiento-de-Imagenes-en-Tiempo-Real.git
+cd Procesamiento-de-Im-genes-en-Tiempo-Real
